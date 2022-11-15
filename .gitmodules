@@ -1,0 +1,3 @@
+[submodule "NopeCHA"]
+	path = NopeCHA
+	url = https://github.com/NopeCHA/NopeCHA
