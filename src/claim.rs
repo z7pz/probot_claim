@@ -1,22 +1,10 @@
-use std::ffi::OsStr;
-
-use headless_chrome::{browser::default_executable, Browser, LaunchOptions, Tab};
+use headless_chrome::{Browser, Tab};
 use serde_json::Value;
 
 use crate::utils::screenshot;
 
-pub fn spawn_calim(token: String, path: &str) -> Result<(), String> {
+pub fn spawn_calim(browser: &Browser, token: String) -> Result<(), String> {
     let probot_daily = String::from("https://probot.io/daily");
-    let browser = Browser::new(
-        LaunchOptions::default_builder()
-            .disable_default_args(true)
-            .path(Some(default_executable().unwrap()))
-            .extensions(vec![OsStr::new(path)])
-            .headless(true)
-            .build()
-            .unwrap(),
-    )
-    .unwrap();
     let tab = browser.wait_for_initial_tab().unwrap();
     tab.navigate_to(&probot_daily)
         .map_err(|_| format!("couldn't navigate to \"{}\"!", &probot_daily))?;
@@ -31,8 +19,8 @@ pub fn spawn_calim(token: String, path: &str) -> Result<(), String> {
         )
         .map_err(|_| format!("couldn't set the localstorage (ac = token)..."))?;
 
-    tab.navigate_to(&probot_daily)
-        .map_err(|_| format!("couldn't navigate to \"{}\"!", &probot_daily))?;
+    tab.reload(false, None)
+        .map_err(|_| format!("couldn't reload."))?;
     tab.wait_for_element(".sidebar_ltr__kXJvp ")
         .map_err(|_| format!("couldn't find sidebar (means u logged in)..."))?;
     tab.wait_for_element(".daily-logo-text")
