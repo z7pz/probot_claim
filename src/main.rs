@@ -22,6 +22,6 @@ async fn main() {
     .unwrap();
     let tokens = get_tokens();
     for token in tokens {
-        spawn_calim(&browser, token.to_string()).unwrap_or_else(|err| println!("{err}"))
+        spawn_calim(&browser, token.to_string()).await.unwrap_or_else(|err| println!("{err}"))
     }
 }
