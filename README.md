@@ -18,3 +18,18 @@ NOTE: this app is still **under development** so it may crashes after you pass a
 2. run `cargo run` or `cargo build`
  
 NOTE: `NopeCHA` directory and `probot_tokens.txt` file need to be in the same directory as project or compiled app
+
+# How to get probot token
+1. login into `probot dashboard`
+2. open `dev-tools`
+3. go into `Application bar`
+4. go to `localstorage`
+5. go to `https://probot.io`
+6. you will find `ac` feild just copy the value of it and this is the `probot token`
+
+or 
+
+1. login into `probot dashboard`
+2. open `dev-tools`
+3. go to console bar
+4. and write `localStorage.getItem("ac")` and press enter
