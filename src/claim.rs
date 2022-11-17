@@ -1,18 +1,14 @@
 use crate::utils::{
-    discord_token_into_probot_token::{discord_token_into_probot_token, AuthResponse},
+    discord_token_into_probot_token::discord_token_into_probot_token,
     get_probot_user::{get_probot_user, User},
     screenshot,
 };
 use headless_chrome::{Browser, Tab};
 
 pub async fn spawn_calim(browser: &Browser, discord_token: String) -> Result<(), String> {
-    let probot_token_request = discord_token_into_probot_token(&discord_token)
+    let probot_token_res = discord_token_into_probot_token(&discord_token)
         .await
-        .map_err(|err| format!("{:?}", err));
-    if probot_token_request.is_err() {
-        return Err("invalid discord token.".to_owned());
-    }
-    let probot_token_res: AuthResponse = probot_token_request?;
+        .map_err(|err| format!("{:?}", err))?;
     let probot_daily = String::from("https://probot.io/daily");
     let tab = browser.wait_for_initial_tab().unwrap();
     tab.navigate_to(&probot_token_res.location)
@@ -26,7 +22,7 @@ pub async fn spawn_calim(browser: &Browser, discord_token: String) -> Result<(),
         .await
         .map_err(|err| format!("{:?}", err));
     if user_request.is_err() {
-        return Err("invalid probot token.".to_owned());
+        return Err(user_request.err().unwrap());
     }
     let user: User = user_request.unwrap();
     tab.navigate_to(&probot_daily)
