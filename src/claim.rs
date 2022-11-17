@@ -1,43 +1,43 @@
-use headless_chrome::{Browser, Tab};
-use serde_json::Value;
-
 use crate::utils::{
+    discord_token_into_probot_token::{discord_token_into_probot_token, AuthResponse},
     get_probot_user::{get_probot_user, User},
     screenshot,
 };
+use headless_chrome::{Browser, Tab};
 
-pub async fn spawn_calim(browser: &Browser, token: String) -> Result<(), String> {
-    let user_request = get_probot_user(&token)
+pub async fn spawn_calim(browser: &Browser, discord_token: String) -> Result<(), String> {
+    let probot_token_request = discord_token_into_probot_token(&discord_token)
+        .await
+        .map_err(|err| format!("{:?}", err));
+    if probot_token_request.is_err() {
+        return Err("invalid discord token.".to_owned());
+    }
+    let probot_token_res: AuthResponse = probot_token_request?;
+    let probot_daily = String::from("https://probot.io/daily");
+    let tab = browser.wait_for_initial_tab().unwrap();
+    tab.navigate_to(&probot_token_res.location)
+        .map_err(|_| format!("couldn't navigate to \"{}\"!", &probot_daily))?;
+    tab.wait_for_element(".fa-gift")
+        .map_err(|_| format!("idk something happened"))?;
+    let probot_token: String = tab
+        .get_storage("ac")
+        .map_err(|_| format!("couldn't get 'ac' from local_storage"))?;
+    let user_request = get_probot_user(&probot_token.to_string())
         .await
         .map_err(|err| format!("{:?}", err));
     if user_request.is_err() {
-        return Err("token is invalid.".to_owned());
+        return Err("invalid probot token.".to_owned());
     }
     let user: User = user_request.unwrap();
-    let probot_daily = String::from("https://probot.io/daily");
-    let tab = browser.wait_for_initial_tab().unwrap();
     tab.navigate_to(&probot_daily)
         .map_err(|_| format!("couldn't navigate to \"{}\"!", &probot_daily))?;
-    tab.wait_for_element("body")
-        .map_err(|_| format!("couldn't find the body..."))?
-        .call_js_fn(
-            r#"function locals (token) {
-    localStorage.setItem("ac", token)
-}"#,
-            vec![Value::String(token.to_string())],
-            false,
-        )
-        .map_err(|_| format!("couldn't set the localstorage (ac = token)..."))?;
-
-    tab.reload(false, None)
-        .map_err(|_| format!("couldn't reload."))?;
     tab.wait_for_element(".sidebar_ltr__kXJvp")
         .map_err(|_| format!("couldn't find sidebar (means u'r not logged in)..."))?;
     let is_claimed = is(&tab);
     if is_claimed {
         return Err(format!(
             "{} is already calimed his daily credits",
-            user.name
+            &user.name
         ));
     }
 
@@ -46,7 +46,7 @@ pub async fn spawn_calim(browser: &Browser, token: String) -> Result<(), String>
         .click()
         .map_err(|_| format!("couldn't click daily logo..."))?;
     check(&tab);
-    screenshot(&tab, token);
+    screenshot(&tab, user._id.to_string());
     Ok(())
 }
 
