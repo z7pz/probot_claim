@@ -6,7 +6,6 @@ use std::ffi::OsStr;
 use claim::spawn_calim;
 use headless_chrome::{browser::default_executable, Browser, LaunchOptions};
 use utils::{get_chrome_extionsion_path, get_tokens};
-
 #[tokio::main]
 async fn main() {
     let chrome_extionsion_path = get_chrome_extionsion_path();
