@@ -1,22 +1,20 @@
-use std::ffi::OsStr;
-
-use headless_chrome::{browser::default_executable, Browser, LaunchOptions, Tab};
+use headless_chrome::{Browser, Tab};
 use serde_json::Value;
 
-use crate::utils::screenshot;
+use crate::utils::{
+    get_probot_user::{get_probot_user, User},
+    screenshot,
+};
 
-pub fn spawn_calim(token: String, path: &str) -> Result<(), String> {
+pub async fn spawn_calim(browser: &Browser, token: String) -> Result<(), String> {
+    let user_request = get_probot_user(&token)
+        .await
+        .map_err(|err| format!("{:?}", err));
+    if user_request.is_err() {
+        return Err("token is invalid.".to_owned());
+    }
+    let user: User = user_request.unwrap();
     let probot_daily = String::from("https://probot.io/daily");
-    let browser = Browser::new(
-        LaunchOptions::default_builder()
-            .disable_default_args(true)
-            .path(Some(default_executable().unwrap()))
-            .extensions(vec![OsStr::new(path)])
-            .headless(true)
-            .build()
-            .unwrap(),
-    )
-    .unwrap();
     let tab = browser.wait_for_initial_tab().unwrap();
     tab.navigate_to(&probot_daily)
         .map_err(|_| format!("couldn't navigate to \"{}\"!", &probot_daily))?;
@@ -31,10 +29,18 @@ pub fn spawn_calim(token: String, path: &str) -> Result<(), String> {
         )
         .map_err(|_| format!("couldn't set the localstorage (ac = token)..."))?;
 
-    tab.navigate_to(&probot_daily)
-        .map_err(|_| format!("couldn't navigate to \"{}\"!", &probot_daily))?;
-    tab.wait_for_element(".sidebar_ltr__kXJvp ")
-        .map_err(|_| format!("couldn't find sidebar (means u logged in)..."))?;
+    tab.reload(false, None)
+        .map_err(|_| format!("couldn't reload."))?;
+    tab.wait_for_element(".sidebar_ltr__kXJvp")
+        .map_err(|_| format!("couldn't find sidebar (means u'r not logged in)..."))?;
+    let is_claimed = is(&tab);
+    if is_claimed {
+        return Err(format!(
+            "{} is already calimed his daily credits",
+            user.name
+        ));
+    }
+
     tab.wait_for_element(".daily-logo-text")
         .map_err(|_| format!("couldn't find daily logo..."))?
         .click()
@@ -42,6 +48,13 @@ pub fn spawn_calim(token: String, path: &str) -> Result<(), String> {
     check(&tab);
     screenshot(&tab, token);
     Ok(())
+}
+
+fn is(tab: &Tab) -> bool {
+    match tab.wait_for_element("#daily-time-left") {
+        Ok(_) => true,
+        Err(_) => false,
+    }
 }
 
 fn check(tab: &Tab) -> &Tab {
