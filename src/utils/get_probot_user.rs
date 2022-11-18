@@ -15,7 +15,7 @@ pub struct User {
 }
 
 pub async fn get_probot_user(token: &String) -> Result<User, Box<dyn std::error::Error>> {
-    let user = UserAgents::new();
+    let _user = UserAgents::new();
     let client = reqwest::Client::new();
     let body = client
         .get("https://api.probot.io/user")

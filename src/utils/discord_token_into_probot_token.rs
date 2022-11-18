@@ -11,6 +11,7 @@ pub struct Options {
     pub permissions: String,
 }
 pub async fn discord_token_into_probot_token(discord_token: &String) -> Result<AuthResponse, Box<dyn std::error::Error>> {
+    println!("{discord_token} is fetching");
     let client = reqwest::Client::new();
     let options = Options {
         authorize: true,

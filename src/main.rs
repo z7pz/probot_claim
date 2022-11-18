@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate lazy_static;
+
 pub mod claim;
 pub mod utils;
 pub mod vote;
